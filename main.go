@@ -103,6 +103,8 @@ func collectMachineResourceMetrics(meter metric.Meter) {
 			// This will be executed every "period" of time passes
 			meter.Float64ObservableGauge(
 				"process.allocated_memory",
+				metric.WithDescription("Allocated memory in MB."),
+				metric.WithUnit("{MB}"),
 				metric.WithFloat64Callback(
 					func(ctx context.Context, fo metric.Float64Observer) error {
 						var memStats runtime.MemStats
