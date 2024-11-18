@@ -1,0 +1,7 @@
+.DS_Store
+.env
+
+signoz/data/alertmanager/*
+signoz/data/clickhouse/*
+signoz/data/signoz/*
+signoz/data/zookeeper-1/*

@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"net/http"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -90,6 +91,34 @@ func initTraceProvider(ctx context.Context, res *resource.Resource, conn *grpc.C
 	return traceProvider.Shutdown, nil
 }
 
+func collectMachineResourceMetrics(meter metric.Meter) {
+	period := 5 * time.Second
+	ticker := time.NewTicker(period)
+
+	var Mb uint64 = 1_048_576 // number of bytes in a MB
+
+	for {
+		select {
+		case <-ticker.C:
+			// This will be executed every "period" of time passes
+			meter.Float64ObservableGauge(
+				"process.allocated_memory",
+				metric.WithFloat64Callback(
+					func(ctx context.Context, fo metric.Float64Observer) error {
+						var memStats runtime.MemStats
+						runtime.ReadMemStats(&memStats)
+
+						allocatedMemoryInMB := float64(memStats.Alloc) / float64(Mb)
+						fo.Observe(allocatedMemoryInMB)
+
+						return nil
+					},
+				),
+			)
+		}
+	}
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -157,6 +186,9 @@ func main() {
 	}
 
 	// Gauge
+	// Memory
+	go collectMachineResourceMetrics(meter)
+	// Cart items
 	itemGauge, err = meter.Int64Gauge(
 		"api.cart.items",
 		metric.WithDescription("Tracks the number of items in a user's cart"),
